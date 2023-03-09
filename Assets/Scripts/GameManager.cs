@@ -35,8 +35,6 @@ public class GameManager : MonoBehaviour
     private Coroutine RenderCandies;
     private Coroutine DestroyCandies;
     private Coroutine CheckScoreCandies;
-    
-    public static List<Vector3> positions = new(); // positions is list path-end of candies when them move from start to end position
 
     private void Awake()
     {
@@ -53,27 +51,14 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         GenerateCandies(CountCandyInBoard);
-        GeneratePositions();
+        
+        gameBoard.GenerateBroad(Board.BoardWidth, Board.BoardHeight);
+        Board.GeneratePositions();
+        Board.GetCandyListToScore();
+        
         RenderCandies = StartCoroutine(RenderCandyList());
-        
         //StartCoroutine(CheckToScore(Board.BoardWidth));
-
         StartCoroutine(Handle());
-
-        // for (int i = 0; i < positions.Count; i++)
-        // {
-        //     Debug.Log($"candy list {CandyList.Count - i - 1}: ({positions[i].x} : {positions[i].y})");
-        // }
-        
-        // for (int i = 0; i < CandyList.Count; i++)
-        // {
-        //     int[] value = new int[CandyList.Count];
-        //     
-        //     if (Board.Order.TryGetValue(i, out value))
-        //     {
-        //         Debug.Log($"Order {i}: ({value[0]} : {value[1]})");
-        //     }
-        // }
     }
 
     
@@ -118,15 +103,15 @@ public class GameManager : MonoBehaviour
         
         for (int i = 0; i < Board.BoardWidth; i++)
         {
-            List<List<int>> value = new List<List<int>>();
+            List<(int, int)> value = new List<(int, int)>();
             int[] temp = new int[Board.BoardWidth];
             if (Board.ListColumn.TryGetValue(i, out value))
             {
                 int count = 0;
                 foreach (var item in value)
                 {
-                    int x = item[0];
-                    int y = item[1];
+                    int x = item.Item1;
+                    int y = item.Item2;
                     int incell = GetIDFormXY(x, y);
                     temp[count] = CandyList[incell].GetComponent<Candy>().CandyID;
                     count++;
@@ -150,9 +135,9 @@ public class GameManager : MonoBehaviour
         int result = -1;
 
        
-        for (int i = 0; i < positions.Count; i++)
+        for (int i = 0; i < Board.positions.Count; i++)
         {
-            if (x == positions[i].x && y == positions[i].y)
+            if (x == Board.positions[i].x && y == Board.positions[i].y)
             {
                 result = CandyList.Count - i - 1;
             }
@@ -314,7 +299,7 @@ public class GameManager : MonoBehaviour
                 {
                     int x = (int)hit.transform.position.x;
                     int y = (int)hit.transform.position.y;
-                    int myKey = Board.Order.FirstOrDefault(item => item.Value[0] == x && item.Value[1] == y).Key;
+                    int myKey = Board.DictPositionToMove.FirstOrDefault(item => item.Value[0] == x && item.Value[1] == y).Key;
                     int inCell = CandyList.Count - myKey - 1;
                    
                     AddClickPosition(x, y, inCell);
@@ -361,29 +346,24 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private static void GeneratePositions()
-    {
-        foreach (var item in Board.Order) positions.Add(new Vector3(item.Value[0], item.Value[1], 0f));
-    }
-    
-    int ScoreCandyListValid(List<int[]> listCandysValid)
-    {
-        foreach (var item in listCandysValid)
-        {
-            for (int i = 0; i < item.Length; i++)
-            {
-                score++;
-            }
-        }
-        listCandysValid.Clear();
-        return score;
-    }
+    // int ScoreCandyListValid(List<int[]> listCandysValid)
+    // {
+    //     foreach (var item in listCandysValid)
+    //     {
+    //         for (int i = 0; i < item.Length; i++)
+    //         {
+    //             score++;
+    //         }
+    //     }
+    //     listCandysValid.Clear();
+    //     return score;
+    // }
 
     bool CheckID(int x, int y, int orderId)
     {
         bool result = false;
         var valueOrder = new int[2];
-        if (Board.Order.TryGetValue(orderId, out valueOrder))
+        if (Board.DictPositionToMove.TryGetValue(orderId, out valueOrder))
         {
             if (valueOrder[0] == x && valueOrder[1] == y)
             {
@@ -399,7 +379,7 @@ public class GameManager : MonoBehaviour
         Dictionary<int,int> candyListIdRow = new Dictionary<int,int>();
         int k = 0;
         
-        for (int i = 0; i < Board.Order.Count; i++)
+        for (int i = 0; i < Board.DictPositionToMove.Count; i++)
         {
             int idToCheck = CountCandyInBoard - 1 - i;
             if (CheckID(x, y, i))
@@ -448,7 +428,7 @@ public class GameManager : MonoBehaviour
     }
     private void ListRowsOrColumns(int check, bool row)
     {
-        List<List<int>> value = new List<List<int>>(); // value is list row or column candy
+        List<(int, int)> value = new List<(int, int)>(); // value is list row or column candy
         if (row == true)
         {
             //Debug.Log("ListRow: " + Board.ListRow.Count);
@@ -460,8 +440,8 @@ public class GameManager : MonoBehaviour
                 
                 foreach (var item in value) // each item is a row of cells
                 {
-                    Dictionary<int, int> candyIdListRow = GetIDCandy(item[0], item[1]);
-                    for (int i = 0; i < Board.Order.Count; i++) // for loop be order to get id candy each member of row (check if x,y of candy == x,y of cell => id in list Order then retun id candy (candy categorize))
+                    Dictionary<int, int> candyIdListRow = GetIDCandy(item.Item1, item.Item2);
+                    for (int i = 0; i < Board.DictPositionToMove.Count; i++) // for loop be order to get id candy each member of row (check if x,y of candy == x,y of cell => id in list Order then retun id candy (candy categorize))
                     {
                         int idCandy;
                         if (candyIdListRow.TryGetValue(i, out idCandy))
@@ -492,8 +472,8 @@ public class GameManager : MonoBehaviour
 
                 foreach (var item in value)
                 {
-                    Dictionary<int, int> candyIdListColumn = GetIDCandy(item[0], item[1]);
-                    for (int i = 0; i < Board.Order.Count; i++)
+                    Dictionary<int, int> candyIdListColumn = GetIDCandy(item.Item1, item.Item2);
+                    for (int i = 0; i < Board.DictPositionToMove.Count; i++)
                     {
                         int values;
                         if (candyIdListColumn.TryGetValue(i, out values))
@@ -716,7 +696,6 @@ public class GameManager : MonoBehaviour
     
     IEnumerator Handle()
     {
-        Board.GetCandyListToScore();
         StartCoroutine(CheckToScore(Board.BoardWidth));
         
         StartCoroutine(CheckStuck());

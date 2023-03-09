@@ -14,7 +14,6 @@ public class CandyManager : MonoBehaviour
     
     public List<int> CandyKeys;
     public List<Sprite> CandySprite;
-
     public static Dictionary<int, Sprite> candyMaps = new();
 
     private void Awake()
@@ -53,7 +52,7 @@ public class CandyManager : MonoBehaviour
     {
         while (start <= endPosition)
         {
-            Instance.StartCoroutine(Moving(a, GameManager.positions[start]));
+            Instance.StartCoroutine(Moving(a, Board.positions[start]));
             start++;
             yield return new WaitForSeconds(TimeToMovePath);
         }
@@ -64,7 +63,7 @@ public class CandyManager : MonoBehaviour
         int currentPosition = 0;
         while (currentPosition <= endPosition)
         {
-            Instance.StartCoroutine(Moving(a, GameManager.positions[currentPosition]));
+            Instance.StartCoroutine(Moving(a, Board.positions[currentPosition]));
             currentPosition++;
             yield return new WaitForSeconds(TimeToMovePath);
         }

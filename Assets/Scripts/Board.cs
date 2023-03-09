@@ -25,9 +25,10 @@ public class Board : MonoBehaviour
     private static Vector2 startPos = new Vector2(0, 4);
 
     // Order is list to contain position (x,y -> List<int>) and id(int) of them
-    public static Dictionary<int, int[]> Order = new();
-    public static Dictionary<int, List<List<int>>> ListRow = new();
-    public static Dictionary<int, List<List<int>>> ListColumn = new();
+    public static Dictionary<int, int[]> DictPositionToMove = new();
+    public static Dictionary<int, List<(int, int)>> ListRow = new();
+    public static Dictionary<int, List<(int, int)>> ListColumn = new();
+    public static List<Vector3> positions = new(); // positions is list path-end of candies when them move from start to end position
     private void Awake()
     {
         try
@@ -49,12 +50,10 @@ public class Board : MonoBehaviour
             Debug.Log("This cell is being without game board");
         }
     }
-
-    private void Start()
+    
+    public static void GeneratePositions()
     {
-        GenerateBroad(BoardWidth, BoardHeight);
-        HighLightCell((int)CheckCell.x, (int)CheckCell.y);
-        // GetCandyListToScore();
+        foreach (var item in Board.DictPositionToMove) positions.Add(new Vector3(item.Value[0], item.Value[1], 0f));
     }
 
     public static (int, int) getXYFromID(int id, int width)
@@ -67,7 +66,7 @@ public class Board : MonoBehaviour
         return y * width + x;
     }
     
-    private void GenerateBroad(int width, int height) // Create board with size 5x5
+    public void GenerateBroad(int width, int height) // Create board with size 5x5
     {
         // Calc total cell and create list cells
         var totalCell = width * height;
@@ -115,7 +114,7 @@ public class Board : MonoBehaviour
                 var item = new int[2];
                 item[0] = x;
                 item[1] = i;
-                Order.Add(count, item);
+                DictPositionToMove.Add(count, item);
                 count++;
             }
             for (var j = x + 1; j <= x + size - 1; j++)
@@ -123,7 +122,7 @@ public class Board : MonoBehaviour
                 var item = new int[2];
                 item[0] = j;
                 item[1] = y - size + 1;
-                Order.Add(count, item);
+                DictPositionToMove.Add(count, item);
                 count++;
             }
             for (var i = y - size + 2; i <= y; i++)
@@ -131,7 +130,7 @@ public class Board : MonoBehaviour
                 var item = new int[2];
                 item[0] = x + size - 1;
                 item[1] = i;
-                Order.Add(count, item);
+                DictPositionToMove.Add(count, item);
                 count++;
             }
             for (var i = x + size - 2; i >= x + 1; i--)
@@ -139,7 +138,7 @@ public class Board : MonoBehaviour
                 var item = new int[2];
                 item[0] = i;
                 item[1] = y;
-                Order.Add(count, item);
+                DictPositionToMove.Add(count, item);
                 count++;
             }
             x++;
@@ -151,16 +150,12 @@ public class Board : MonoBehaviour
     // Add each row and column to calculate score
     public static void GetCandyListToScore()
     {
-        ListRow.Clear();
-        ListColumn.Clear();
-        ListRow = new();
-        ListColumn = new();
         int count = 0;
         
         while (count < 5)
         {
-            List<List<int>> tempRow = new List<List<int>>();
-            List<List<int>> tempColumn = new List<List<int>>();
+            List<(int, int)> tempRow = new List<(int, int)>();
+            List<(int, int)> tempColumn = new List<(int, int)>();
             
             for (int i = 0; i < Cells.Count; i++)
             {
@@ -169,18 +164,12 @@ public class Board : MonoBehaviour
 
                 if (y == count)
                 {
-                    List<int> temp = new List<int>();
-                    temp.Add(x);
-                    temp.Add(y);
-                    tempRow.Add(temp);
+                    tempRow.Add((x,y));
                 }
 
                 if (x == count)
                 {
-                    List<int> temp = new List<int>();
-                    temp.Add(x);
-                    temp.Add(y);
-                    tempColumn.Add(temp);
+                    tempColumn.Add((x,y));
                 }
             }
             ListRow.Add(count, tempRow);
@@ -188,40 +177,4 @@ public class Board : MonoBehaviour
             count++;
         }
     }
-
-    // public List<int[]> CandyRow = new List<int[]>();
-    // public List<int[]> CandyColumn = new List<int[]>();
-    //
-    // public void GetCandyListToScoreWithID()
-    // {
-    //     int count = 0;
-    //     
-    //     while (count < 5)
-    //     {
-    //         int[] tempRow = new int[BoardWidth];
-    //         int[] tempColumn = new int[BoardWidth];
-    //         
-    //         for (int i = 0; i < Cells.Count; i++)
-    //         {
-    //             int y = (int)Cells[i].transform.position.y;
-    //             int x = (int)Cells[i].transform.position.x;
-    //
-    //             if (y == count)
-    //             {
-    //                 tempRow[0] = x;
-    //                 tempRow[1] = y;
-    //             }
-    //
-    //             if (x == count)
-    //             {
-    //                 tempColumn[0] = x;
-    //                 tempColumn[1] = y;
-    //             }
-    //         }
-    //         
-    //         CandyRow.Add(tempRow);
-    //         CandyColumn.Add(tempColumn);
-    //         count++;
-    //     }
-    // }
 }
