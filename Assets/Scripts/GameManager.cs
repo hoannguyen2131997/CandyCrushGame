@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
     private Coroutine DestroyCandies;
     private Coroutine CheckScoreCandies;
 
+    private Dictionary<(int, int), int> DictIdCandies = new();
     private void Awake()
     {
         try
@@ -58,76 +59,241 @@ public class GameManager : MonoBehaviour
         
         RenderCandies = StartCoroutine(RenderCandyList());
         //StartCoroutine(CheckToScore(Board.BoardWidth));
+        GetIDCandies();
+        // int k = TakeIDCandyOfCell(0,1);
+        // Debug.Log("id candy 0 1: " + k);
+        // List<int> idCandies = new();
+        // idCandies =  GetIDCandiesRowOrColumn(1, "Column");
+
+        
+        // for (int i = 0; i < idCandies.Count; i++)
+        // {
+        //     Debug.Log("id candies: " + idCandies[i]);
+        // }
+
+        // int id = GetIDCandyFromIndex(0, "Row", 1);
+        // Debug.Log("id : " + id);
+        
+   
+        Debug.Log("Check stuck row: " + CheckIsStuckRowOrColumn("Column"));
+        Debug.Log("Check stuck column: " + CheckIsStuckRowOrColumn("Row"));
         StartCoroutine(Handle());
+        // Debug.Log("Check stuck row: " + CheckIsStuckRowOrColumn("Column"));
+        // Debug.Log("Check stuck column: " + CheckIsStuckRowOrColumn("Row"));
     }
 
-    
-    IEnumerator CheckStuck()
+    private void GetIDCandies()
     {
-        // int[] temp = new int[Board.BoardWidth];
-        
-        // for (int i = 0; i < Board.BoardWidth; i++)
-        // {
-        //     
-        //     List<List<int>> value = new List<List<int>>();
-        //     if (Board.ListRow.TryGetValue(i, out value))
-        //     {
-        //         foreach (var item in value)
-        //         {
-        //             int x = item[0];
-        //             int y = item[1];
-        //             int incell = GetIDFormXY(x, y);
-        //             int idCandy = CandyList[incell].GetComponent<Candy>().CandyID;
-        //
-        //             // if (i > 0)
-        //             // {
-        //             //     List<List<int>> valuePre = new List<List<int>>();
-        //             //     if (Board.ListRow.TryGetValue(i - 1, out valuePre))
-        //             //     {
-        //             //         
-        //             //     }
-        //             // }
-        //             //
-        //             // if (i < 4)
-        //             // {
-        //             //     
-        //             // }
-        //             Debug.Log($"Row {i}: x: {x}, y: {y}, incell: {incell}, idcandy: {idCandy}");
-        //         }
-        //     }
-        // }
-        
-        // int[,] listIdCandy = new int[Board.BoardWidth,Board.BoardWidth];
-        
-        List<int[]> listIdCandy = new List<int[]>();
+        for (int i = 0; i < Board.BoardWidth; i++)
+        {
+            List<(int, int)> listPositionCandies = new List<(int, int)>();
+            if (Board.ListColumn.TryGetValue(i, out listPositionCandies))
+            {
+                for (int j = 0; j < listPositionCandies.Count; j++)
+                {
+                    int x = listPositionCandies[j].Item1;
+                    int y = listPositionCandies[j].Item2;
+                    int id = TakeIDCandyOfCell(x,y);
+                    DictIdCandies.Add((x,y), id);
+                }
+            }
+        }
+    }
+
+    private int GetIDCandyFromIndex(int count, string type, int index)   // count is a row or column, type is "Column" or "Row" string, index is position of candy is used to find position candy next row or column
+    {
+        int result = 0;
+        if (type == "Row")
+        {
+            List<(int, int)> listPositionCandies = new();
+            if (Board.ListRow.TryGetValue(count, out listPositionCandies))
+            {
+                int x = listPositionCandies[index].Item1;
+                int y = listPositionCandies[index].Item2;
+                result = TakeIDCandyOfCell(x,y);
+                Board.HighLightCell(x, y);
+            }
+        }
+        else if (type == "Column")
+        {
+            List<(int, int)> listPositionCandies = new();
+            if (Board.ListColumn.TryGetValue(count, out listPositionCandies))
+            {
+                int x = listPositionCandies[index].Item1;
+                int y = listPositionCandies[index].Item2;
+                result = TakeIDCandyOfCell(x,y);
+                Board.HighLightCell(x, y);
+            }
+        }
+        else Debug.Log("Only Row or Column is valid");
+
+        return result;
+    }
+
+    private List<int> GetIDCandiesRowOrColumn(int count, string type)
+    {
+        List<int> listIdCandies = new(); 
+        if (type == "Row")
+        {
+            List<(int, int)> listPostion = new();
+            if (Board.ListRow.TryGetValue(count, out listPostion))
+            {
+                for (int i = 0; i < listPostion.Count; i++)
+                {
+                    int x = listPostion[i].Item1;
+                    int y = listPostion[i].Item2;
+                    //Board.HighLightCell(x, y);
+                    int id;
+                    if (DictIdCandies.TryGetValue((x,y), out id))
+                    {
+                        listIdCandies.Add(id);
+                    }
+                }
+            }
+        }
+        else if (type == "Column")
+        {
+            List<(int, int)> listPostion = new();
+            if (Board.ListColumn.TryGetValue(count, out listPostion))
+            {
+                for (int i = 0; i < listPostion.Count; i++)
+                {
+                    int x = listPostion[i].Item1;
+                    int y = listPostion[i].Item2;
+                    //Board.HighLightCell(x, y);
+                    int id;
+                    if (DictIdCandies.TryGetValue((x,y), out id))
+                    {
+                        listIdCandies.Add(id);
+                    }
+                }
+            }
+        }
+        else Debug.Log("Only Row or Column is valid");
+
+        return listIdCandies;
+    }
+    
+    private bool checkIsStuckTwoList(List<int> listCur, List<int> listNext)
+    {
+        List<int> listItemp = new();
+        bool check121 = false;  // ex: id current list: 1 2 1
+                                //     id next list:      1
+                                
+        for (int i = 0; i < listCur.Count; i++)
+        {
+            if (listItemp.Count == 0)
+            {
+                listItemp.Add(listCur[i]);
+                if (i >= listCur.Count - 4)
+                {
+                    if (listItemp[0] == listCur[i + 2] && listItemp[0] == listCur[i + 3])  //ex: id current list: 1 2 1 1
+                    {
+                        Debug.Log($"Id candy 1 current: {listItemp[0]}");
+                        Debug.Log($"Id candy 3 current: {listCur[i + 1]}");
+                        Debug.Log($"Id candy 4 current: {listCur[i + 2]}");
+                        return false;
+                    }
+                }
+            }
+            else if (listItemp.Count == 1)
+            {
+                if (listItemp[0] != listCur[i] && listItemp[0] != listNext[i])  
+                {
+                    listItemp.Clear();
+                    listItemp = new();
+                    listItemp.Add(listCur[i]);
+                }
+                else if (listItemp[0] == listNext[i])
+                {
+                    check121 = true;
+                    listItemp.Add(listCur[i]);
+                }
+                else  listItemp.Add(listCur[i]);
+            }
+            else if (listItemp.Count == 2)
+            {
+                if (i < listCur.Count - 1)
+                {
+                    if (listItemp[1] != listCur[i] && listItemp[1] != listNext[i] && listItemp[1] != listCur[i + 1] && !(check121 && listItemp[0] == listCur[i]))
+                    {
+                        listItemp.Clear();
+                        listItemp = new();
+                        listItemp.Add(listCur[i]);
+                    }
+                    else 
+                    {
+                        Debug.Log($"Id candy 2 current: {listItemp[1]}");
+                        Debug.Log($"Id candy 2 next list: {listNext[i - 1]}");
+                        Debug.Log($"Id candy 3 current: {listCur[i]}");
+                        Debug.Log($"Id candy 3 next list: {listNext[i]}");
+                        Debug.Log($"Id candy 4 current: {listCur[i + 1]}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (listItemp[1] != listCur[i] && listItemp[1] != listNext[i] && !(check121 && listItemp[0] == listCur[i]))
+                    {
+                        listItemp.Clear();
+                        listItemp = new();
+                        listItemp.Add(listCur[i]);
+                    }
+                    else 
+                    {
+                        Debug.Log($"Id candy 2 current: {listItemp[1]}");
+                        Debug.Log($"Id candy 3 current: {listCur[i]}");
+                        Debug.Log($"Id candy 3 next list: {listNext[i]}");
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    private bool CheckIsStuckRowOrColumn(string type)
+    {
         
         for (int i = 0; i < Board.BoardWidth; i++)
         {
-            List<(int, int)> value = new List<(int, int)>();
-            int[] temp = new int[Board.BoardWidth];
-            if (Board.ListColumn.TryGetValue(i, out value))
+            if (i == 0)
             {
-                int count = 0;
-                foreach (var item in value)
+                List<int> Row = GetIDCandiesRowOrColumn(i, type);
+                List<int> AfterRow = GetIDCandiesRowOrColumn(i + 1, type);
+                bool checkIsStuckAfter = checkIsStuckTwoList(Row,AfterRow);
+
+                if (!checkIsStuckAfter)
                 {
-                    int x = item.Item1;
-                    int y = item.Item2;
-                    int incell = GetIDFormXY(x, y);
-                    temp[count] = CandyList[incell].GetComponent<Candy>().CandyID;
-                    count++;
+                    return false;
                 }
             }
-            listIdCandy.Add(temp);
-        }
-
-        for (int i = 0; i < listIdCandy.Count; i++)
-        {
-            for (int j = 0; j < Board.BoardWidth; j++)
+            else if (i == Board.BoardWidth - 1)
             {
-                Debug.Log($"idCandy [{i}] : [{j}]: {listIdCandy[i][j]}");
+                List<int> BeforRow = GetIDCandiesRowOrColumn(i - 1, type);
+                List<int> Row = GetIDCandiesRowOrColumn(i, type);
+                bool checkIsStuckBefore = checkIsStuckTwoList(Row,BeforRow);
+                
+                if (checkIsStuckBefore)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                List<int> BeforRow = GetIDCandiesRowOrColumn(i - 1, type);
+                List<int> Row = GetIDCandiesRowOrColumn(i, type);
+                List<int> AfterRow = GetIDCandiesRowOrColumn(i + 1, type);
+                bool checkIsStuckBefore = checkIsStuckTwoList(Row,BeforRow);
+                bool checkIsStuckAfter = checkIsStuckTwoList(Row,AfterRow);
+
+                if (!checkIsStuckBefore || !checkIsStuckAfter)
+                {
+                    return false;
+                };
             }
         }
-        yield return null;
+        return true;
     }
     
     private int GetIDFormXY(int x, int y)
@@ -390,6 +556,21 @@ public class GameManager : MonoBehaviour
             }
         }
         return candyListIdRow;
+    }
+
+    private int TakeIDCandyOfCell(int x, int y)
+    {
+        int candyId = 0;
+        for (int i = 0; i < Board.DictPositionToMove.Count; i++)
+        {
+            int idToCheck = CountCandyInBoard - 1 - i;
+            if (CheckID(x, y, i))
+            {
+                candyId = CandyList[idToCheck].GetComponent<Candy>().CandyID; // get id candy;
+            }
+        }
+    
+        return candyId;
     }
 
     void ScoreEachRowOrColumn(int idCandy, List<int> tempCandyValid, int idOrderList, List<int> tempCandyValidToDestroy)
@@ -698,8 +879,9 @@ public class GameManager : MonoBehaviour
     {
         StartCoroutine(CheckToScore(Board.BoardWidth));
         
-        StartCoroutine(CheckStuck());
+        // bool checkStuck = CheckStuckRowOrColumn("Column") || CheckStuckRowOrColumn("Row");
         
+       
         // After change id, sprite(id = 0, sprite = null) of candy. We will delay 3 seconds to look result that we find before
         DestroyCandies = StartCoroutine(DestroyListCandy());
         yield return DestroyCandies;
@@ -736,7 +918,6 @@ public class GameManager : MonoBehaviour
         handle1 = StartCoroutine(RenderCandiesFormID(idToStart));
         yield return handle1;
         StartCoroutine(RenderCandiesFromPool(idToStart));
-
         handle2 = StartCoroutine(RestListCandies());
         yield return handle2;
 

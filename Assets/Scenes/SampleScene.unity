@@ -659,7 +659,7 @@ MonoBehaviour:
   CandyPrefab: {fileID: 1290992573}
   TimeToMovePath: 0.2
   TimeToMoveEachPosition: 0.2
-  CandyKeys: 0000000001000000020000000300000004000000050000000600000007000000
+  CandyKeys: 000000000100000002000000030000000400000005000000060000000700000008000000
   CandySprite:
   - {fileID: 21300000, guid: 84ddcebf3bdcc28438098d277e254507, type: 3}
   - {fileID: 21300000, guid: e6819b053eab3c54983854ad87777f3f, type: 2}
@@ -669,6 +669,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 8762d49e5b2f6de47944e6398ea19d91, type: 2}
   - {fileID: 21300000, guid: 22cf8fbeac15f4e4ea48adec58bf61f3, type: 2}
   - {fileID: 21300000, guid: 56b6c2be9c3d637479365c749ffd7003, type: 2}
+  - {fileID: 21300000, guid: 409876457bfc7444995a04a93dcbf015, type: 2}
 --- !u!4 &1372098599
 Transform:
   m_ObjectHideFlags: 0
